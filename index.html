@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        body {
+            overflow:hidden;
+        }
+        #result {
+            line-height:30px;
+            overflow-x:hidden;
+            overflow-y:scroll;
+        }
+    </style>
+</head>
+<body>
+<textarea id="txtarea" rows="3" cols="50">com.antfact.oplate.message.count.channel</textarea>
+<button id="btn">监听推送</button>
+<button id="follow">滚动跟随</button>
+<button id="clear">清空内容</button>
+<div id="result"></div>
+<script src="http://cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
+<script src="http://cdn.bootcss.com/socket.io/1.4.5/socket.io.js"></script>
+<script>
+    //设置结果div的高度
+    function setResultDivHeight() {
+        var h = $(window).height() - $("#txtarea").height() - 20;
+        $("#result").css("height" , h);
+    }
+
+    setResultDivHeight();
+
+    var follow = false;
+
+    $("#follow").click(function() {
+        follow = !follow;
+        if(follow) {
+            $("#follow").html("停止滚动跟随");
+        } else {
+            $("#follow").html("滚动跟随");
+        }
+        var count = $("#result>div").length;
+        if(count > 2000) {
+            $("#result>div:lt(1000)").remove();
+        }
+    });
+
+    $(window).resize(setResultDivHeight);
+
+    $("#clear").click(function() {
+        $("#result").empty();
+    });
+
+    var socketIoUrl = 'http://172.19.103.212:9093';
+    var socket;
+
+    function log(message) {
+        var html = '<div>' + message + '</div>';
+        $("#result").append(html);
+        if(follow) {
+            $("#result").scrollTop($("#result")[0].scrollHeight);
+        }
+    }
+
+    function startConnection() {
+        if(socket) {
+            socket.disconnect();
+        }
+        socket = io(socketIoUrl,{forceNew:true});
+        socket.on('connect', function(){
+            log("connect success");
+            log("listening " + $("#txtarea").val());
+            socket.on($("#txtarea").val() , function(data) {
+                log(JSON.stringify(data));
+            });
+
+            follow = true;
+            $("#follow").html("停止滚动跟随");
+
+        });
+        socket.on('disconnect' , function() {
+            log("disconnect success");
+        });
+    }
+
+    $("#btn").click(startConnection);
+
+    startConnection();
+</script>
+</body>
+</html>
